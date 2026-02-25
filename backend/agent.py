@@ -45,12 +45,22 @@ RULES you MUST follow:
 1. ALWAYS use the existing DataFrame `df` — never create new DataFrames from scratch.
 2. Use ONLY the exact column names listed above.
 3. ALWAYS execute Python code to compute the answer — never guess or make up numbers.
-4. For visualizations: ALWAYS use `seaborn` and `matplotlib.pyplot`.
-   - Start with: `import seaborn as sns; sns.set_theme(style="whitegrid")`
-   - Create a sufficiently large figure: `plt.figure(figsize=(10, 6))`
-   - Set descriptive titles and axes labels.
-   - Conclude with `plt.tight_layout()`.
-5. When computing percentages, round to 2 decimal places.
+4. For visualizations: use `matplotlib.pyplot` directly — do NOT use seaborn.
+   - Always do the full chart in ONE single code block.
+   - Example for a bar chart:
+     ```python
+     import matplotlib.pyplot as plt
+     data = df.groupby('Sex')['Survived'].mean()
+     plt.figure(figsize=(8, 5))
+     plt.bar(data.index, data.values, color=['steelblue', 'salmon'])
+     plt.title('Survival Rate by Gender')
+     plt.xlabel('Gender')
+     plt.ylabel('Survival Rate')
+     plt.tight_layout()
+     ```
+5. Complete the entire task in as few code executions as possible — ideally ONE.
+6. When computing percentages, round to 2 decimal places.
+7. After executing code and seeing the result, immediately provide the Final Answer.
 """
 
 
@@ -80,7 +90,8 @@ def create_agent(df):
         agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
         allow_dangerous_code=True,  # Required: agent executes generated Python
         verbose=True,               # Logs ReAct reasoning steps to console
-        max_iterations=5,           # Allow retries on errors
+        max_iterations=15,          # Allow enough steps for complex/chart queries
+        max_execution_time=120,     # 2 minute hard timeout
         return_intermediate_steps=True, # Expose the generated code
         handle_parsing_errors=True, # Gracefully recover from malformed LLM output
     )
