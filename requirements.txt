@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+langchain
+langchain-experimental
+langchain-groq
+pandas
+matplotlib
+streamlit
+requests
+tabulate
+python-dotenv
