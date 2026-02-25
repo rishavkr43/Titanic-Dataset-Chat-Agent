@@ -1,16 +1,22 @@
 """
 Streamlit Frontend — Titanic Dataset Chat Agent
 
-A clean chat interface that:
-- Accepts natural language questions
-- Sends them to the FastAPI backend
-- Renders text answers and matplotlib visualizations
+Runs fully self-contained (no separate FastAPI server needed).
+Works both locally and on Streamlit Cloud.
 """
 
+import os
+import sys
 import base64
-import requests
+import pandas as pd
+from pathlib import Path
 import streamlit as st
-from io import BytesIO
+
+# ─── Path Setup (works locally and on Streamlit Cloud) ───────────
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+
+from backend.agent import create_agent, run_query
 
 # ─── Page Configuration ─────────────────────────────────────────
 st.set_page_config(
@@ -19,8 +25,30 @@ st.set_page_config(
     layout="centered",
 )
 
-# ─── Backend URL ─────────────────────────────────────────────────
-BACKEND_URL = "http://localhost:8000"
+# ─── API Key: Streamlit Secrets → env var fallback ───────────────
+if "GROQ_API_KEY" in st.secrets:
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+if not os.getenv("GROQ_API_KEY"):
+    st.error(
+        "🔑 **GROQ_API_KEY not found.**\n\n"
+        "- **Streamlit Cloud:** Add it in App Settings → Secrets\n"
+        "- **Local:** Add it to `.env` or `.streamlit/secrets.toml`"
+    )
+    st.stop()
+
+# ─── Load Data & Agent ONCE (cached across reruns) ───────────────
+@st.cache_resource(show_spinner="🚀 Loading Titanic dataset and initializing agent...")
+def load_agent():
+    data_path = ROOT / "backend" / "data" / "titanic.csv"
+    df = pd.read_csv(data_path)
+    df["Age"] = df["Age"].fillna(df["Age"].median())
+    df["Embarked"] = df["Embarked"].fillna(df["Embarked"].mode()[0])
+    if "Cabin" in df.columns:
+        df = df.drop(columns=["Cabin"])
+    return create_agent(df), df
+
+agent_executor, df = load_agent()
 
 # ─── Custom Styling ──────────────────────────────────────────────
 st.markdown("""
@@ -101,61 +129,28 @@ if prompt := st.chat_input("Ask a question about the Titanic dataset..."):
     with st.chat_message("assistant"):
         with st.spinner("🔍 Analyzing the dataset..."):
             try:
-                response = requests.post(
-                    f"{BACKEND_URL}/chat",
-                    json={"question": prompt},
-                    timeout=120,  # LLM can take time
-                )
+                result = run_query(agent_executor, prompt)
+                answer_text = result.get("text", "No response received.")
+                answer_image = result.get("image")
+                answer_code = result.get("code")
 
-                if response.status_code == 200:
-                    data = response.json()
-                    answer_text = data.get("text", "No response received.")
-                    answer_image = data.get("image")
-                    answer_code = data.get("code")
+                st.markdown(answer_text)
 
-                    st.markdown(answer_text)
-                    
-                    if answer_code:
-                        with st.expander("🛠️ View Agent's Python Code"):
-                            st.code(answer_code, language="python")
+                if answer_code:
+                    with st.expander("🛠️ View Agent's Python Code"):
+                        st.code(answer_code, language="python")
 
-                    if answer_image:
-                        image_bytes = base64.b64decode(answer_image)
-                        st.image(image_bytes, use_container_width=True)
+                if answer_image:
+                    image_bytes = base64.b64decode(answer_image)
+                    st.image(image_bytes, use_container_width=True)
 
-                    # Save to history
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": answer_text,
-                        "image": answer_image,
-                        "code": answer_code,
-                    })
-                else:
-                    error_msg = f"⚠️ Backend error (status {response.status_code})"
-                    st.error(error_msg)
-                    st.session_state.messages.append({
-                        "role": "assistant",
-                        "content": error_msg,
-                    })
-
-            except requests.exceptions.ConnectionError:
-                error_msg = (
-                    "⚠️ Cannot connect to the backend. "
-                    "Make sure the FastAPI server is running:\n\n"
-                    "```bash\nuvicorn backend.main:app --port 8000\n```"
-                )
-                st.error(error_msg)
                 st.session_state.messages.append({
                     "role": "assistant",
-                    "content": error_msg,
+                    "content": answer_text,
+                    "image": answer_image,
+                    "code": answer_code,
                 })
-            except requests.exceptions.Timeout:
-                error_msg = "⚠️ Request timed out. The query may be too complex. Try a simpler question."
-                st.error(error_msg)
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": error_msg,
-                })
+
             except Exception as e:
                 error_msg = f"⚠️ Unexpected error: {str(e)}"
                 st.error(error_msg)
@@ -172,7 +167,9 @@ with st.sidebar:
         "using a **LangChain Pandas Agent** powered by Groq LLM."
     )
     st.markdown("---")
-    st.markdown("### 📊 Dataset Columns")
+    st.markdown("### 📊 Dataset Info")
+    st.markdown(f"**Rows:** {df.shape[0]}  |  **Columns:** {df.shape[1]}")
+    st.markdown("### 📋 Columns")
     st.markdown("""
     | Column | Type |
     |--------|------|
@@ -186,7 +183,6 @@ with st.sidebar:
     | Parch | int |
     | Ticket | string |
     | Fare | float |
-    | Cabin | string |
     | Embarked | C/Q/S |
     """)
     st.markdown("---")
