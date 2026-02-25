@@ -1,6 +1,10 @@
 # 🚢 Titanic Data Agent
 
+[![Live Demo](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://apyvypgbrrcdawknukbfvw.streamlit.app/)
+
 A full-stack AI-powered chat interface to explore the Titanic dataset using natural language. Ask questions in plain English and get instant answers, charts, and generated code — powered by **Groq LLaMA 3.3 70B**, **LangChain**, and **FastAPI + Streamlit**.
+
+🔗 **Live App:** [https://apyvypgbrrcdawknukbfvw.streamlit.app/](https://apyvypgbrrcdawknukbfvw.streamlit.app/)
 
 ---
 
@@ -39,8 +43,8 @@ A full-stack AI-powered chat interface to explore the Titanic dataset using natu
 ### 1. Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd rishavproject
+git clone https://github.com/rishavkr43/Titanic-Dataset-Chat-Agent.git
+cd Titanic-Dataset-Chat-Agent
 ```
 
 ### 2. Create and activate a virtual environment
@@ -77,22 +81,11 @@ GROQ_API_KEY=your_groq_api_key_here
 
 ## 🚀 Running the App
 
-You need **two terminals** — one for the backend, one for the frontend.
+### ☁️ Option 1 — Streamlit Cloud (No setup needed)
 
-### Terminal 1 — Start the FastAPI backend
+Just visit the live app: [https://apyvypgbrrcdawknukbfvw.streamlit.app/](https://apyvypgbrrcdawknukbfvw.streamlit.app/)
 
-```bash
-# Windows
-venv\Scripts\python.exe -m uvicorn backend.main:app --reload --port 8000
-
-# macOS/Linux
-python -m uvicorn backend.main:app --reload --port 8000
-```
-
-Backend runs at: [http://localhost:8000](http://localhost:8000)  
-API docs at: [http://localhost:8000/docs](http://localhost:8000/docs)
-
-### Terminal 2 — Start the Streamlit frontend
+### 💻 Option 2 — Run Locally
 
 ```bash
 # Windows
@@ -102,7 +95,7 @@ venv\Scripts\python.exe -m streamlit run frontend/app.py
 streamlit run frontend/app.py
 ```
 
-Frontend runs at: [http://localhost:8501](http://localhost:8501)
+App runs at: [http://localhost:8501](http://localhost:8501)
 
 ---
 
