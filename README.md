@@ -73,8 +73,6 @@ Edit `.env` and add your Groq API key:
 GROQ_API_KEY=your_groq_api_key_here
 ```
 
-> Get a free API key at [https://console.groq.com/keys](https://console.groq.com/keys)
-
 ---
 
 ## 🚀 Running the App
